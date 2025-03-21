@@ -35,21 +35,67 @@ It should look like this:
 
 How are you going to achieve this? You can try it on your own, but here you have a
 step-by-step just in case:
-
-1. Write two data types. One for the moves (Move) you can make, and another for the maze (Maze).
-(Use the example above to figure them out.)
-
-2. Write a function called "move" that takes a maze and a move and returns the maze after the move.
-
-3. Write a "testMaze" value of type "Maze" and test the "move" function in GHCi.
-
-4. Write the "solveMaze" function that will take a maze and a list of moves and returns the maze
-after making those moves.
-
-5. If you test the "solveMaze" function, you'll see that each time you try to solve the maze,
-it'll print the whole maze for the player to see. To avoid that, write a "showCurrentChoice" function
-that takes a maze and returns a different string depending on if you hit a wall, found the exit, or
-still need to make another choice.
-
-6. Adapt adapt "solveMaze" function to use "showCurrentChoice" and play with your new game using GHCi! :D
 -}
+
+--1. Write two data types. One for the moves (Move) you can make, and another for the maze (Maze).
+--(Use the example above to figure them out.)
+data Move = GoLeft | GoRight | GoForward
+    deriving (Show, Eq)
+
+data Maze = Path Maze Maze Maze | Wall | Exit
+    deriving (Show)
+
+--2. Write a function called "move" that takes a maze and a move and returns the maze after the move.
+move :: Maze -> Move -> Maze
+move (Path left right forward) mv = case mv of
+    GoLeft -> left
+    GoRight -> right
+    GoForward -> forward
+move Wall _ = Wall
+move Exit _ = Exit
+
+--3. Write a "testMaze" value of type "Maze" and test the "move" function in GHCi.
+testMaze :: Maze
+testMaze = Path
+    Wall
+    (Path Wall Exit Wall)
+    (Path (Path Exit Wall Wall) Wall Wall)
+
+moveExample = move testMaze GoForward
+
+--4. Write the "solveMaze" function that will take a maze and a list of moves and returns the maze
+--after making those moves.
+
+solveMaze :: Maze -> [Move] -> Maze
+solveMaze maze [] = maze
+solveMaze (Path left right forward) (mv:mvl) = case mv of
+    GoLeft -> solveMaze left mvl
+    GoRight -> solveMaze right mvl
+    GoForward -> solveMaze forward mvl
+solveMaze Wall _ = Wall
+solveMaze Exit _ = Exit
+
+solveExample = solveMaze testMaze [GoForward, GoLeft, GoRight]
+
+
+--5. If you test the "solveMaze" function, you'll see that each time you try to solve the maze,
+--it'll print the whole maze for the player to see. To avoid that, write a "showCurrentChoice" function
+--that takes a maze and returns a different string depending on if you hit a wall, found the exit, or
+--still need to make another choice.
+showCurrentChoice :: Maze -> String
+showCurrentChoice (Path {}) = "You're still inside the maze. Choose a path, brave adventurer: GoLeft, GoRight, or GoForward."
+showCurrentChoice Wall = "You've hit a wall!"
+showCurrentChoice Exit = "YOU'VE FOUND THE EXIT!!"
+
+--6. Adapt adapt "solveMaze" function to use "showCurrentChoice" and play with your new game using GHCi! :D
+
+solveMaze' :: Maze -> [Move] -> String
+solveMaze' maze [] = showCurrentChoice maze
+solveMaze' (Path left right forward) (mv:mvl) = case mv of
+    GoLeft -> solveMaze' left mvl
+    GoRight -> solveMaze' right mvl
+    GoForward -> solveMaze' forward mvl
+solveMaze' Wall _ = showCurrentChoice Wall
+solveMaze' Exit _ = showCurrentChoice Exit
+
+solveExample' = solveMaze' testMaze [GoForward, GoLeft]
