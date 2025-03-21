@@ -42,3 +42,36 @@ Using GHCi, like the "Maze" game, this game should look like this:
 *Main> solveForest testForest [GoForward, GoLeft , GoRight]
 "YOU'VE FOUND THE EXIT!!"
 -}
+
+-- Core Game
+data Move = GoLeft | GoRight | GoForward
+    deriving (Show, Eq)
+
+data Forest = Path Forest Forest Forest | Exit
+    deriving (Show)
+
+
+crossForest :: Forest -> [Move] -> Forest
+crossForest forest [] = forest
+crossForest (Path left right forward) (mv:mvl) = case mv of
+    GoLeft -> crossForest left mvl
+    GoRight -> crossForest right mvl
+    GoForward -> crossForest forward mvl
+crossForest Exit _ = Exit
+
+showCurrentChoice :: Forest -> String
+showCurrentChoice Exit = "YOU'VE FOUND THE EXIT!!"
+showCurrentChoice _ = "You're still in the forest. Choose a path: GoLeft, GoRight, or GoForward."
+
+play :: Forest -> [Move] -> String
+play forest moves = showCurrentChoice $ crossForest forest moves
+
+-- Test example
+testForest :: Forest
+testForest =
+    Path
+        (Path Exit (Path Exit Exit Exit) Exit)  -- Left eventually leads to Exit
+        (Path (Path Exit Exit Exit) Exit (Path Exit Exit Exit))  -- Right eventually leads to Exit
+        (Path (Path Exit Exit Exit) (Path Exit Exit Exit) Exit)  -- Forward eventually leads to Exit
+
+solveExample = crossForest testForest [GoForward, GoLeft]
