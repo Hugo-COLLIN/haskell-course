@@ -47,31 +47,41 @@ Using GHCi, like the "Maze" game, this game should look like this:
 data Move = GoLeft | GoRight | GoForward
     deriving (Show, Eq)
 
-data Forest = Path Forest Forest Forest | Exit
+data Forest staminaLoss = Path staminaLoss (Forest staminaLoss) (Forest staminaLoss) (Forest staminaLoss) | Exit
     deriving (Show)
 
+crossForest :: (Num stamina, Ord stamina) => (stamina, Forest stamina) -> [Move] -> (stamina, Forest stamina)
+crossForest (stamina, Exit) _ = (stamina, Exit)
+crossForest (stamina, forest) [] = (stamina, forest)
+crossForest (stamina, Path cost left right forward) (mv:mvl)
+    | stamina <= 0 = (stamina, Path cost left right forward)
+    | otherwise = case mv of
+        GoLeft -> crossForest (stamina - cost, left) mvl
+        GoRight -> crossForest (stamina - cost, right) mvl
+        GoForward -> crossForest (stamina - cost, forward) mvl
 
-crossForest :: Forest -> [Move] -> Forest
-crossForest forest [] = forest
-crossForest (Path left right forward) (mv:mvl) = case mv of
-    GoLeft -> crossForest left mvl
-    GoRight -> crossForest right mvl
-    GoForward -> crossForest forward mvl
-crossForest Exit _ = Exit
+showCurrentChoice :: (Num stamina, Show stamina, Ord stamina) => (stamina, Forest stamina) -> String
+showCurrentChoice (stamina, Exit)
+    | stamina <= 0 = "Finding the exit, you ran out of stamina and died -.-!"
+    | otherwise = "YOU'VE FOUND THE EXIT!!"
+showCurrentChoice (stamina, Path {})
+    | stamina <= 0 = "You ran out of stamina and died -.-!"
+    | otherwise = "You have " ++ show stamina ++ " stamina, and you're still inside the Forest. Choose a path, brave adventurer: GoLeft, GoRight, or GoForward."
 
-showCurrentChoice :: Forest -> String
-showCurrentChoice Exit = "YOU'VE FOUND THE EXIT!!"
-showCurrentChoice _ = "You're still in the forest. Choose a path: GoLeft, GoRight, or GoForward."
-
-play :: Forest -> [Move] -> String
-play forest moves = showCurrentChoice $ crossForest forest moves
+play :: (Num stamina, Ord stamina, Show stamina) => Forest stamina -> [Move] -> String
+play forest moves = showCurrentChoice $ crossForest (10, forest) moves
 
 -- Test example
-testForest :: Forest
+testForest :: Forest Int
 testForest =
-    Path
-        (Path Exit (Path Exit Exit Exit) Exit)  -- Left eventually leads to Exit
-        (Path (Path Exit Exit Exit) Exit (Path Exit Exit Exit))  -- Right eventually leads to Exit
-        (Path (Path Exit Exit Exit) (Path Exit Exit Exit) Exit)  -- Forward eventually leads to Exit
+    Path 2  -- The initial move costs 2 stamina
+        (Path 3 Exit (Path 6 Exit Exit Exit) Exit)  -- Left path (cost 3) leads to Exit
+        (Path 1 (Path 8 Exit (Path 5 Exit Exit Exit) Exit) Exit (Path 4 Exit Exit Exit))  -- Right path (cost 1)
+        (Path 2 (Path 2 Exit Exit Exit) (Path 3 Exit Exit Exit) Exit)  -- Forward path (cost 2)
 
-solveExample = crossForest testForest [GoForward, GoLeft]
+examplePath = play testForest [GoForward, GoLeft]
+exampleDied = play testForest [GoRight, GoLeft, GoRight]
+exampleExitDied = play testForest [GoLeft, GoRight, GoRight]
+exampleExit = play testForest [GoLeft, GoLeft]
+
+
