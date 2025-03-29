@@ -88,22 +88,9 @@ Use the getCPUTime :: IO Integer function to get the CPU time before and after t
 The CPU time here is given in picoseconds (which is 1/1000000000000th of a second).
 -}
 
---timeIO :: IO a -> IO ()
---timeIO a = do
---    initTime <- getCPUTime
---    !result <- a
---    -- Force evaluation of the spine of the list
---    let !len = length result
---    endTime <- getCPUTime
-----    putStrLn $ "Time : " ++ show (endTime - initTime)
---    let elapsedTime = (endTime - initTime) `div` (10^9)
---    putStrLn $ "Time: " ++ show elapsedTime
+type TimedResult a = (Double, a)
 
--- Fonction utilitaire pour convertir une fonction pure en action IO
-testPrimeFunction :: NFData a => (a -> [a]) -> a -> IO Double
-testPrimeFunction primeFunc n = timeIO (return $ primeFunc n)
-
-timeIO :: NFData a => IO a -> IO Double
+timeIO :: NFData a => IO a -> IO (TimedResult a)
 timeIO action = do
     -- Get initial CPU time
     startTime <- getCPUTime
@@ -120,7 +107,11 @@ timeIO action = do
     -- Calculate elapsed time in seconds
     let elapsedTime = fromInteger (endTime - startTime) / 1e12
 
-    return elapsedTime
+    return (elapsedTime, result)
+
+-- Fonction utilitaire pour convertir une fonction pure en action IO
+testPrimeFunction :: NFData a => (a -> [a]) -> a -> IO (TimedResult [a])
+testPrimeFunction primeFunc n = timeIO (return $ primeFunc n)
 
 {-
 -- Question 4 --
@@ -135,14 +126,14 @@ benchmark = do
     param <- getLine
     let paramInt = read param :: Integer
 
-    resp1 <- testPrimeFunction primes1 paramInt
-    putStrLn $ "Primes1: " ++ show resp1
+    (t1, l1) <- testPrimeFunction primes1 paramInt
+    putStrLn $ "Primes1: " ++ show t1 ++ "s with " ++ show (last l1)
 
-    resp2 <- testPrimeFunction primes2 paramInt
-    putStrLn $ "Primes2: " ++ show resp2
+    (t2, l2) <- testPrimeFunction primes2 paramInt
+    putStrLn $ "Primes2: " ++ show t2 ++ "s with " ++ show (last l1)
 
-    resp3 <- testPrimeFunction primes3 paramInt
-    putStrLn $ "Primes3: " ++ show resp3
+    (t3, l3) <- testPrimeFunction primes3 paramInt
+    putStrLn $ "Primes3: " ++ show t3 ++ "s with " ++ show (last l1)
 
 
 
