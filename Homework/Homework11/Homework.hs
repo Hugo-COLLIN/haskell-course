@@ -2,6 +2,8 @@ import Data.List
 import System.CPUTime (getCPUTime)
 import System.Directory (doesFileExist, listDirectory)
 import Text.XHtml (thead)
+import Control.DeepSeq
+
 
 {-
 We imported some functions that you'll need to complete the homework.
@@ -20,7 +22,14 @@ and prints it to the terminal inside a string message.
 (hidden files are not included)
 -}
 
--- listFiles :: IO ()
+listFiles :: IO ()
+listFiles = do
+    entries <- listDirectory "."
+
+    let visibleEntries = filter (not . isPrefixOf ".") entries
+
+    putStrLn $ "Visible entries: " ++ show (length visibleEntries)
+
 
 {-
 -- Question 2 --
@@ -29,7 +38,15 @@ to a file called msg.txt, and after that, it reads the text from the msg.txt
 file and prints it back. Use the writeFile and readFile functions.
 -}
 
--- createMsg :: IO ()
+createMsg :: IO ()
+createMsg = do
+    putStrLn "Please type something (anything please!!!) :"
+    msg <- getLine
+    writeFile "msg.txt" msg
+
+    content <- readFile "msg.txt"
+    putStrLn ("Content of msg.txt:\n" ++ content)
+
 
 
 {-
@@ -71,8 +88,39 @@ Use the getCPUTime :: IO Integer function to get the CPU time before and after t
 The CPU time here is given in picoseconds (which is 1/1000000000000th of a second).
 -}
 
--- timeIO :: IO a -> IO ()
+--timeIO :: IO a -> IO ()
+--timeIO a = do
+--    initTime <- getCPUTime
+--    !result <- a
+--    -- Force evaluation of the spine of the list
+--    let !len = length result
+--    endTime <- getCPUTime
+----    putStrLn $ "Time : " ++ show (endTime - initTime)
+--    let elapsedTime = (endTime - initTime) `div` (10^9)
+--    putStrLn $ "Time: " ++ show elapsedTime
 
+-- Fonction utilitaire pour convertir une fonction pure en action IO
+testPrimeFunction :: NFData a => (a -> [a]) -> a -> IO Double
+testPrimeFunction primeFunc n = timeIO (return $ primeFunc n)
+
+timeIO :: NFData a => IO a -> IO Double
+timeIO action = do
+    -- Get initial CPU time
+    startTime <- getCPUTime
+
+    -- Execute the action and get its result
+    result <- action
+
+    -- Important : forcer l'évaluation avant de mesurer le temps final
+    result `deepseq` return () -- Cette ligne est cruciale
+
+    -- Get final CPU time
+    endTime <- getCPUTime
+
+    -- Calculate elapsed time in seconds
+    let elapsedTime = fromInteger (endTime - startTime) / 1e12
+
+    return elapsedTime
 
 {-
 -- Question 4 --
@@ -81,7 +129,23 @@ and compares the time all three algorithms take to produce the largest prime bef
 limit. Print the number and time to the standard output.
 -}
 
--- benchmark :: IO ()
+benchmark :: IO ()
+benchmark = do
+    putStr "Enter a value param: "
+    param <- getLine
+    let paramInt = read param :: Integer
+
+    resp1 <- testPrimeFunction primes1 paramInt
+    putStrLn $ "Primes1: " ++ show resp1
+
+    resp2 <- testPrimeFunction primes2 paramInt
+    putStrLn $ "Primes2: " ++ show resp2
+
+    resp3 <- testPrimeFunction primes3 paramInt
+    putStrLn $ "Primes3: " ++ show resp3
+
+
+
 
 {-
  -- Question 5 -- EXTRA CREDITS -- (In case the previous ones were too easy)
