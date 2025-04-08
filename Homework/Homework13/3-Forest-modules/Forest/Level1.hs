@@ -1,6 +1,9 @@
-module Forest.Level1 where
+-- 1 module per file
+module Forest.Level1 (Forest(..), level1forest) where
 
 data Forest a = Exit | Trail a (Forest a) (Forest a) (Forest a) deriving (Show)
+
+helperFunction = 6 -- not exposed to the outside (cf module signature)
 
 level1forest :: (Ord a, Num a) => Forest a
 level1forest =

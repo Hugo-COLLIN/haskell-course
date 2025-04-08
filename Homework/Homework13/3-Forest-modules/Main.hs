@@ -1,6 +1,6 @@
 module Main where
 
-import Forest.Level1 (Forest(..), level1forest)
+import Forest.Level1 (Forest(..), level1forest) --helperFunction won't work because not exposed
 import User.Actions.Move (AvailableMoves(..), move)
 
 main :: IO ()
