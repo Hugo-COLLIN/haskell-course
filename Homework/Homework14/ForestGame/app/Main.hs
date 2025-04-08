@@ -6,7 +6,7 @@ import System.Random (randomRIO)
 
 main :: IO ()
 main = do
-        startingStamina <- randomRIO (10,20) :: IO Int
+        startingStamina <- randomRIO (10000,20000) :: IO Int
         putStrLn "You're traped in a Forest, try to scape! Remember that you loose stamina with each step you take"
         gameLoop (startingStamina, level1forest)
     where
