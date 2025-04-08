@@ -22,6 +22,8 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 
+*.exe
+
 # JupyterLab
 .ipynb_checkpoints
 lab/.ipynb_checkpoints
