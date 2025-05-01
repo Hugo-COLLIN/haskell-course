@@ -1,5 +1,7 @@
 module Main where
 
+import Text.Read (readMaybe)
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- IMPORTANT: Read the README.md file before completing the homework.
@@ -26,16 +28,28 @@ prompt todos = do
   command <- getLine
   interpretCommand command todos
 
-delete :: Int -> [a] -> [a]
-delete 0 (_ : as) = as
-delete _ [] = []
-delete n (a : as) = a : delete (n - 1) as
+-- Bug Fix 1: Safe delete function that checks index bounds
+delete :: Int -> [a] -> Maybe [a]
+delete _ [] = Nothing
+delete n xs
+    | n < 0 || n >= length xs = Nothing
+    | otherwise = Just $ take n xs ++ drop (n+1) xs
 
 interpretCommand :: String -> [String] -> IO ()
 interpretCommand cmd todos = case cmd of
   "q" -> return ()
   ('+' : ' ' : todo) -> prompt (todo : todos)
-  ('-' : ' ' : num) -> prompt $ delete (read num) todos
+
+  -- Bug Fix 1: Safe deletion with bounds checking and validation
+  ('-' : ' ' : num) -> case readMaybe num of
+    Nothing -> do
+      putStrLn $ "Error: '" ++ num ++ "' is not a valid number."
+      prompt todos
+    Just n -> case delete n todos of
+      Nothing -> do
+        putStrLn $ "Error: Item " ++ show n ++ " doesn't exist."
+        prompt todos
+      Just newTodos -> prompt newTodos
   ('s' : ' ' : fn) ->
     writeFile fn (show todos)
   ('l' : ' ' : fn) -> readFile fn >>= prompt . read
