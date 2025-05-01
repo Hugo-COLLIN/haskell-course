@@ -2,6 +2,9 @@
 
 module Homework15B where
 
+import Control.Exception (try, IOException)
+import Data.Char (isDigit, isUpper, isLower)
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- IMPORTANT: Read the README.md file before completing the homework.
@@ -12,19 +15,27 @@ module Homework15B where
 -- If the list is empty, return Nothing.
 
 headMaybe :: [a] -> Maybe a
-headMaybe = undefined
+headMaybe [] = Nothing
+headMaybe (x:_) = Just x
 
 -- 2. Write a function that takes a list of Maybe values and returns a list of all the Just values.
 -- If there are no Just values, return an empty list.
 
 catMaybes :: [Maybe a] -> [a]
-catMaybes = undefined
+catMaybes [] = []
+catMaybes (Just a : l) = (a : catMaybes l)
+catMaybes (Nothing : l) = catMaybes l
+
 
 -- 3. Write a function that tries to read from a file and returns the contents of the file.
 -- If the file does not exist, return Nothing.
 
 readFileMaybe :: FilePath -> IO (Maybe String)
-readFileMaybe = undefined
+readFileMaybe path = do
+    result <- try (readFile path) :: IO (Either IOException String)
+    case result of
+        Left _ -> return Nothing
+        Right content -> return (Just content)
 
 -- 4. Write a function that checks all the requirements for a password using the
 -- Either type with a custom data type for errors.
@@ -34,19 +45,40 @@ readFileMaybe = undefined
 -- - The password must contain at least one uppercase letter.
 -- - The password must contain at least one lowercase letter.
 
-data PasswordError = WrongConstructor
+data PasswordError = 
+      TooShort Int      -- Current length and minimum required
+    | NoDigit
+    | NoUpperCase
+    | NoLowerCase
+    deriving Show
 
 passwordLongEnough :: String -> Either PasswordError String
-passwordLongEnough = undefined
+passwordLongEnough pwd
+    | length pwd >= 10 = Right pwd
+    | otherwise = Left (TooShort (length pwd))
 
 passwordHasDigit :: String -> Either PasswordError String
-passwordHasDigit = undefined
+passwordHasDigit pwd
+    | any isDigit pwd = Right pwd
+    | otherwise = Left NoDigit
+
 
 passwordHasUppercase :: String -> Either PasswordError String
-passwordHasUppercase = undefined
+passwordHasUppercase pwd
+    | any isUpper pwd = Right pwd
+    | otherwise = Left NoUpperCase
 
 passwordHasLowercase :: String -> Either PasswordError String
-passwordHasLowercase = undefined
+passwordHasLowercase pwd
+    | any isLower pwd = Right pwd
+    | otherwise = Left NoLowerCase
 
 passwordRequirements :: String -> Either PasswordError String
-passwordRequirements = undefined
+-- passwordRequirements pwd = do
+--     p1 <- passwordLongEnough pwd
+--     p2 <- passwordHasDigit p1
+--     p3 <- passwordHasUppercase p2
+--     passwordHasLowercase p3
+
+passwordRequirements pwd = 
+    passwordLongEnough pwd >>= passwordHasDigit >>= passwordHasUppercase >>= passwordHasLowercase
