@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Exception (try, IOException)
 import Text.Read (readMaybe)
 
 --------------------------------------------------------------------------------
@@ -50,8 +51,18 @@ interpretCommand cmd todos = case cmd of
         putStrLn $ "Error: Item " ++ show n ++ " doesn't exist."
         prompt todos
       Just newTodos -> prompt newTodos
-  ('s' : ' ' : fn) ->
-    writeFile fn (show todos)
+
+  -- Bug Fix 2: Safe file saving with exception handling
+  ('s' : ' ' : fn) -> do
+    result <- try (writeFile fn (show todos)) :: IO (Either IOException ())
+    case result of
+      Left err -> do
+        putStrLn $ "Error saving to file '" ++ fn ++ "': " ++ show err
+        prompt todos
+      Right _ -> do
+        putStrLn $ "Successfully saved to file '" ++ fn ++ "'."
+        prompt todos
+
   ('l' : ' ' : fn) -> readFile fn >>= prompt . read
   _ -> do
     putStrLn ("Invalid command: `" ++ cmd ++ "`")
