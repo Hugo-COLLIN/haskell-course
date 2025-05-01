@@ -63,7 +63,19 @@ interpretCommand cmd todos = case cmd of
         putStrLn $ "Successfully saved to file '" ++ fn ++ "'."
         prompt todos
 
-  ('l' : ' ' : fn) -> readFile fn >>= prompt . read
+  -- Bug Fix 3: Safe file loading with exception and format handling
+  ('l' : ' ' : fn) -> do
+    result <- try (readFile fn) :: IO (Either IOException String)
+    case result of
+      Left err -> do
+        putStrLn $ "Error loading file '" ++ fn ++ "': " ++ show err
+        prompt todos
+      Right content -> case reads content of
+        [(newTodos, "")] -> prompt newTodos
+        _ -> do
+          putStrLn $ "Error: File '" ++ fn ++ "' contains invalid data format."
+          prompt todos
+
   _ -> do
     putStrLn ("Invalid command: `" ++ cmd ++ "`")
     prompt todos
